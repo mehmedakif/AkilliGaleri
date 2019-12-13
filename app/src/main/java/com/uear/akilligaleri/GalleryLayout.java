@@ -1,7 +1,10 @@
-package com.uear.akilligaleri.ui.gallery;
+package com.uear.akilligaleri;
 
 import android.Manifest;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -14,21 +17,13 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.widget.Toolbar;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.navigation.NavigationView;
-import com.uear.akilligaleri.ImgActivity;
-import com.uear.akilligaleri.R;
 import com.uear.akilligaleri.ui.SingleUploadBroadcastReceiver;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
@@ -44,18 +39,21 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
-public class GalleryFragment extends Fragment implements SingleUploadBroadcastReceiver.Delegate {
+import static android.widget.Toast.makeText;
 
-    private GalleryViewModel galleryViewModel;
+public class GalleryLayout extends AppCompatActivity implements SingleUploadBroadcastReceiver.Delegate {
     String UPLOAD_URL = "http://81.214.177.75:3000/upload";
     private final SingleUploadBroadcastReceiver uploadReceiver =
             new SingleUploadBroadcastReceiver();
     private NavigationView nvDrawer;
-    private DrawerLayout mDrawer;
-    private Toolbar toolbar;
+
     // Make sure to be using androidx.appcompat.app.ActionBarDrawerToggle version.
     private ActionBarDrawerToggle drawerToggle;
-
+    @Override
+    public Context getApplicationContext()
+    {
+        return super.getApplicationContext();
+    }
 
     public static boolean isGalleryInitalized = false;
     private static final int REQUEST_PERMISSION = 1234;
@@ -67,43 +65,52 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                     Manifest.permission.INTERNET
             };
 
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
-        galleryViewModel =
-                ViewModelProviders.of(this).get(GalleryViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_gallery, container, false);
-        final TextView textView = root.findViewById(R.id.text_gallery);
-        galleryViewModel.getText().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
+    private boolean arePermissionsDenied()
+    {
+        for(int i = 0 ;i<PERMISSION_COUNT;i++)
+        {
+            if(checkSelfPermission(PERMISSION[i]) != PackageManager.PERMISSION_GRANTED)
+            {
+                return true;
             }
-
-
-        });
-
-    /*Serverdan gelen sonuc fotografinin adi path olarak aliniyor.
-    path ile cagirilan img Bitmap olarak donduruluyor.*/
-
-        //Bitmap olarak aldigi parametereyi yerel bir klasore kayit ediyor.
-        //Gallery adapter
-        return root;
-
-    }
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        GridView gridView = Objects.requireNonNull(getView()).findViewById(R.id.gridView);
-
+        }
+        return false;
     }
 
+    public void onRequestPermissionsResult(final int requestCode,final String[] permissions,final int[] grantResults)
+    {
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);
+        if( requestCode == REQUEST_PERMISSION && grantResults.length>0 )
+        {
+            if( arePermissionsDenied() )
+            {
+                ( (ActivityManager) Objects.requireNonNull( this.getSystemService(ACTIVITY_SERVICE) ) ).
+                        clearApplicationUserData();
+            }
+        }
+    }
+
     @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.gallery_layout);
+        Toast bakalim = Toast.makeText(this,"Hmmm",Toast.LENGTH_LONG);
+        bakalim.show();
+    }
     public void onResume()
     {
         super.onResume();
+
+        if (arePermissionsDenied())
+        {
+            requestPermissions (PERMISSION, REQUEST_PERMISSION);
+            return;
+        }
+
         if (!isGalleryInitalized)
         {
-            //final GridView gridview = findViewById(R.id.gridView);
-            GridView gridview = Objects.requireNonNull(getView()).findViewById(R.id.gridView);
+            final GridView gridview = findViewById(R.id.gridView);
             final GalleryAdapter galleryAdapter = new GalleryAdapter();
             final File imagesDir = new File(String.valueOf(Environment.
                     getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
@@ -138,54 +145,60 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             gridview.setAdapter(galleryAdapter);
             isGalleryInitalized = true;
         }
-        uploadReceiver.register(Objects.requireNonNull(getActivity()));
+        uploadReceiver.register(this);
     }
+
     @Override
-    public void onPause() {
+    protected void onPause() {
         super.onPause();
+        uploadReceiver.unregister(this);
     }
 
     @Override
     public void onProgress(int progress) {
-
+        //your implementation
     }
 
     @Override
     public void onProgress(long uploadedBytes, long totalBytes) {
-
+        //your implementation
+        Toast toast = makeText(this,"POST DEVAM EDIYOR",Toast.LENGTH_LONG);
+        toast.show();
     }
 
     @Override
     public void onError(Exception exception) {
-
+        //your implementation
     }
 
     @Override
-    public void onCompleted ( int serverResponseCode, byte[] serverResponseBody)
+    public void onCompleted(int serverResponseCode, byte[] serverResponseBody)
     {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        Toast toastComplete = makeText(this,"POST TAMAMLANDI",Toast.LENGTH_LONG);
         StrictMode.setThreadPolicy(policy);
         //Serverdan gelen response (resmin adi) value stringine yaziliyor.
         // response icerigi suna benzerdir ; value = img-15642132.jpg
         String value = new String(serverResponseBody);
         //Resim gelen value degeri parametre gecilerek
         Bitmap bmp = downloadImageFromPath(value);
-        File directory = new File(Environment.getExternalStorageDirectory() + java.io.File.separator + "Pictures/detectedFaces");
+        File directory = new File(Environment.getExternalStorageDirectory() + java.io.File.separator +"Pictures/detectedFaces");
 
-        if (!directory.exists()) {
+        if (!directory.exists())
+        {
             directory.mkdir();
-            //Toast.makeText(this, "DETECED KLASORU OLUSTURULDU", Toast.LENGTH_SHORT).show();
-        } else
-            //Toast.makeText(this, "KLASOR ZATEN VAR", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "DETECED KLASORU OLUSTURULDU", Toast.LENGTH_SHORT).show();
+        }
+        else
+            Toast.makeText(this, "KLASOR ZATEN VAR", Toast.LENGTH_SHORT).show();
 
-            bitmapToFile(bmp);
+        bitmapToFile(bmp);
     }
-
     @Override
     public void onCancelled() {
-
+        //your implementation
     }
-
+    //Servere fotografi byte[] array olarak yollayan fonksiyon.
     private void uploadImage(String path) {
 
         String name = "image";
@@ -193,19 +206,23 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             String uploadId = UUID.randomUUID().toString();
             uploadReceiver.setDelegate(this);
             uploadReceiver.setUploadID(uploadId);
-            new MultipartUploadRequest(Objects.requireNonNull(getActivity()), uploadId, UPLOAD_URL)
+            new MultipartUploadRequest(this, uploadId, UPLOAD_URL)
                     .addFileToUpload(path, "uploadImage") //Adding file
                     .addParameter("name", name) //Adding text parameter to the request
                     .setMaxRetries(2)
                     .startUpload();
 
+            Toast toast = makeText(this, "POST BASLATILDI", Toast.LENGTH_LONG);
+            toast.show();//Starting the upload
+
         } catch (Exception e) {
-
+            Toast toast = makeText(this, "UPLOAD EDILEMEDI", Toast.LENGTH_LONG);
+            toast.show();
         }
-
-
     }
-    private Bitmap downloadImageFromPath(String path){
+    /*Serverdan gelen sonuc fotografinin adi path olarak aliniyor.
+    path ile cagirilan img Bitmap olarak donduruluyor.*/
+    public Bitmap downloadImageFromPath(String path){
         InputStream in =null;
         Bitmap bmp=null;
         int responseCode = -1;
@@ -230,7 +247,8 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         }
         return bmp;
     }
-    private void bitmapToFile(Bitmap bmp) {
+    //Bitmap olarak aldigi parametereyi yerel bir klasore kayit ediyor.
+    public void bitmapToFile(Bitmap bmp) {
 
         try {
             String root = Environment.getExternalStorageDirectory().getAbsolutePath(); // "storage/emulated/0" yolunu getirir.
@@ -242,8 +260,15 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             File f = new File(root + File.separator + fileName);
 
             if (f.exists()) {
+                Toast toast = makeText(this,"RESIM ZATEN VAR",Toast.LENGTH_LONG);
+                toast.show();
+                //f.delete();
+//                FileOutputStream out = new FileOutputStream(f);
+//                bmp.compress(Bitmap.CompressFormat.PNG, 90, out);
+//                out.flush();
+//                out.close();
                 String imgDownloaded = root+"/"+fileName;
-                Intent intent = new Intent(this.getContext(), ImgActivity.class);
+                Intent intent = new Intent(this, ImgActivity.class);
                 intent.putExtra("path", imgDownloaded);
                 startActivity(intent);
             }
@@ -253,9 +278,11 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                 bmp.compress(Bitmap.CompressFormat.PNG, 90, out);
                 out.flush();
                 out.close();
+                Toast toast = makeText(this,"RESIM DOSYAYA YAZILDI",Toast.LENGTH_LONG);
+                toast.show();
 
                 String imgDownloaded = root+"/"+fileName;
-                Intent intent = new Intent(this.getContext(), ImgActivity.class);
+                Intent intent = new Intent(this, ImgActivity.class);
                 intent.putExtra("path", imgDownloaded);
                 startActivity(intent);
             }
@@ -264,42 +291,48 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             e.printStackTrace();
         }
     }
-
-    final class GalleryAdapter extends BaseAdapter
+    //Gallery adapter
+    public final class GalleryAdapter extends BaseAdapter
     {
         List<String> data = new ArrayList<>();
-
-        void setData(List<String> data) {
-            if (this.data.size() > 0) {
+        void setData(List<String> data)
+        {
+            if ( this.data.size() > 0 )
+            {
                 this.data.clear();
             }
             this.data.addAll(data);
             notifyDataSetChanged();
         }
-
         @Override
-        public int getCount() {
+        public int getCount()
+        {
 
             return data.size();
         }
 
         @Override
-        public Object getItem(int position) {
+        public Object getItem(int position)
+        {
             return data.get(position);
         }
 
         @Override
-        public long getItemId(int position) {
+        public long getItemId(int position)
+        {
             return position;
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(int position, View convertView, ViewGroup parent)
+        {
             final ImageView imageview;
-            if (convertView == null) {
-                imageview = (ImageView) LayoutInflater.from(parent.getContext()).inflate(R.layout.item, parent, false);
-            } else imageview = (ImageView) convertView;
-            Glide.with(GalleryFragment.this).load(data.get(position)).centerCrop().into(imageview);
+            if ( convertView == null )
+            {
+                imageview = (ImageView) LayoutInflater.from(parent.getContext()).inflate(R.layout.item,parent,false);
+            }
+            else imageview = (ImageView) convertView;
+            Glide.with(GalleryLayout.this).load(data.get(position)).centerCrop().into(imageview);
             return imageview;
         }
     }
