@@ -46,8 +46,6 @@ import java.util.UUID;
 
 public class GalleryFragment extends Fragment implements SingleUploadBroadcastReceiver.Delegate {
 
-    private GalleryViewModel galleryViewModel;
-    String UPLOAD_URL = "http://81.214.177.75:3000/upload";
     private final SingleUploadBroadcastReceiver uploadReceiver =
             new SingleUploadBroadcastReceiver();
     private NavigationView nvDrawer;
@@ -57,7 +55,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
     private ActionBarDrawerToggle drawerToggle;
 
 
-    public static boolean isGalleryInitalized = false;
+    private static boolean isGalleryInitalized = false;
     private static final int REQUEST_PERMISSION = 1234;
     private static final int PERMISSION_COUNT = 2 ;
     private static final String[] PERMISSION =
@@ -69,8 +67,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        galleryViewModel =
-                ViewModelProviders.of(this).get(GalleryViewModel.class);
+        GalleryViewModel galleryViewModel = ViewModelProviders.of(this).get(GalleryViewModel.class);
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
         final TextView textView = root.findViewById(R.id.text_gallery);
         galleryViewModel.getText().observe(this, new Observer<String>() {
@@ -81,18 +78,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
 
 
         });
-
-    /*Serverdan gelen sonuc fotografinin adi path olarak aliniyor.
-    path ile cagirilan img Bitmap olarak donduruluyor.*/
-
-        //Bitmap olarak aldigi parametereyi yerel bir klasore kayit ediyor.
-        //Gallery adapter
         return root;
-
-    }
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        GridView gridView = Objects.requireNonNull(getView()).findViewById(R.id.gridView);
 
     }
 
@@ -102,7 +88,6 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         super.onResume();
         if (!isGalleryInitalized)
         {
-            //final GridView gridview = findViewById(R.id.gridView);
             GridView gridview = Objects.requireNonNull(getView()).findViewById(R.id.gridView);
             final GalleryAdapter galleryAdapter = new GalleryAdapter();
             final File imagesDir = new File(String.valueOf(Environment.
@@ -111,6 +96,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             //final int filesCount = files.length;
             final List<String> filesList = new ArrayList<>();
 
+            assert files != null;
             for (File file : files)
             {
                 final String path = file.getAbsolutePath();
@@ -193,6 +179,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             String uploadId = UUID.randomUUID().toString();
             uploadReceiver.setDelegate(this);
             uploadReceiver.setUploadID(uploadId);
+            String UPLOAD_URL = "http://81.214.177.75:3000/upload";
             new MultipartUploadRequest(Objects.requireNonNull(getActivity()), uploadId, UPLOAD_URL)
                     .addFileToUpload(path, "uploadImage") //Adding file
                     .addParameter("name", name) //Adding text parameter to the request
