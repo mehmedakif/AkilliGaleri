@@ -15,6 +15,7 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,6 +33,9 @@ import com.uear.akilligaleri.R;
 import com.uear.akilligaleri.ui.SingleUploadBroadcastReceiver;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -153,18 +157,36 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         StrictMode.setThreadPolicy(policy);
         //Serverdan gelen response (resmin adi) value stringine yaziliyor.
         // response icerigi suna benzerdir ; value = img-15642132.jpg
-        String value = new String(serverResponseBody);
-        //Resim gelen value degeri parametre gecilerek
-        Bitmap bmp = downloadImageFromPath(value);
+        //String facesImg = serverResponseBody.getString(outputImg);
         File directory = new File(Environment.getExternalStorageDirectory() + java.io.File.separator + "Pictures/detectedFaces");
-
         if (!directory.exists()) {
             directory.mkdir();
-            //Toast.makeText(this, "DETECED KLASORU OLUSTURULDU", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "DETECED KLASORU OLUSTURULDU", Toast.LENGTH_SHORT).show();
         } else
-            //Toast.makeText(this, "KLASOR ZATEN VAR", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "KLASOR ZATEN VAR", Toast.LENGTH_SHORT).show();
 
-            bitmapToFile(bmp);
+
+        try {
+            JSONObject testV = new JSONObject(new String(serverResponseBody));
+
+            int objectLength = testV.length();
+            String[] imgArray = new String[objectLength];
+            for(int i = 0; i<objectLength-1 ;i++)
+            {
+                String iterator = String.valueOf(i+1);
+                imgArray[i] = testV.getString("face"+iterator);
+                Bitmap bmp = downloadImageFromPath(imgArray[i]);
+                String[] bitmapFaces = new String[objectLength];
+                bitmapFaces[i] = bmp.toString();
+                Log.i("YUZLERIN VERILERI",bitmapFaces[i]);
+                bitmapToFile(bmp,false);
+            }
+            imgArray[objectLength-1]= testV.getString("outputImg");
+            Bitmap bmp = downloadImageFromPath(imgArray[objectLength-1]);
+            bitmapToFile(bmp,true);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -217,7 +239,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         }
         return bmp;
     }
-    private void bitmapToFile(Bitmap bmp) {
+    private void bitmapToFile(Bitmap bmp,boolean control) {
 
         try {
             String root = Environment.getExternalStorageDirectory().getAbsolutePath(); // "storage/emulated/0" yolunu getirir.
@@ -242,9 +264,11 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                 out.close();
 
                 String imgDownloaded = root+"/"+fileName;
-                Intent intent = new Intent(this.getContext(), ImgActivity.class);
-                intent.putExtra("path", imgDownloaded);
-                startActivity(intent);
+                if(control) {
+                    Intent intent = new Intent(this.getContext(), ImgActivity.class);
+                    intent.putExtra("path", imgDownloaded);
+                    startActivity(intent);
+                }
             }
 
         } catch (Exception e) {

@@ -5,7 +5,10 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -96,8 +99,14 @@ public class MainActivity extends AppCompatActivity
         //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         // Find our drawer view
         DrawerLayout mDrawer = findViewById(R.id.drawer_layout);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayShowTitleEnabled(false);
+        Button menuButton = findViewById(R.id.menu_button);
 
-
+        menuButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mDrawer.openDrawer(Gravity.LEFT);
+            }
+        });
 
     }
     private void setupDrawerContent(NavigationView navigationView) {
