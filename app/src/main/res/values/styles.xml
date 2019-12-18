@@ -11,14 +11,15 @@
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
     </style>
+
     <style name="bsssss">
         <item name="colorControlNormal">#55555566</item>
         <item name="colorControlActivated">#2266AA</item>
         <item name="colorControlHighlight">#000000</item>
     </style>
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>

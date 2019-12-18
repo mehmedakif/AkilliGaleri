@@ -4,7 +4,8 @@ xmlns:android="http://schemas.android.com/apk/res/android"
 xmlns:app="http://schemas.android.com/apk/res-auto"
 android:id="@+id/drawer_layout"
 android:layout_width="match_parent"
-android:layout_height="match_parent">
+android:layout_height="match_parent"
+    android:background="@color/colorMilk">
 
 <!-- This LinearLayout represents the contents of the screen  -->
 
@@ -18,28 +19,29 @@ android:layout_height="match_parent">
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" >
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="55dp"
-                android:orientation="vertical">
 
-                <!-- The ActionBar displayed at the top -->
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent"-->
+<!--                android:layout_marginTop="55dp"-->
+<!--                android:orientation="vertical">-->
 
-                <include
-                    layout="@layout/gallery_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-                <!-- The main content view where fragments are loaded -->
+<!--                &lt;!&ndash; The ActionBar displayed at the top &ndash;&gt;-->
 
-            </LinearLayout>
+<!--                <include-->
+<!--                    layout="@layout/gallery_layout"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content" />-->
+<!--                &lt;!&ndash; The main content view where fragments are loaded &ndash;&gt;-->
+
+<!--            </LinearLayout> -->
+
         </FrameLayout>
 
         <include
             layout="@layout/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
-        <include layout="@layout/button_layout"/>
 
     </FrameLayout>
 
