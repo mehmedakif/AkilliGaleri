@@ -25,12 +25,15 @@ import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity
 {
+    private DBManager dbManager;
     private DrawerLayout mDrawer;
     Fragment fragment_home = new HomeFragment();
     Fragment fragment_gallery = new GalleryFragment();
     Fragment fragment_send = new SendFragment();
     Fragment active = fragment_gallery;
     final FragmentManager fm = getSupportFragmentManager();
+
+
 
     @Override
     public Context getApplicationContext()
@@ -95,8 +98,16 @@ public class MainActivity extends AppCompatActivity
         fm.beginTransaction().add(R.id.flContent, fragment_home, "3").hide(fragment_home).commit();
         fm.beginTransaction().add(R.id.flContent, fragment_gallery, "2").hide(fragment_gallery).commit();
 
+        fm.beginTransaction().hide(active).show(fragment_gallery).commit();
+        active = fragment_gallery;
+
+        dbManager = new DBManager(this);
+        dbManager.open();
+
+
 
         menuButton.setOnClickListener(v -> mDrawer.openDrawer(Gravity.LEFT));
+
     }
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
@@ -127,5 +138,12 @@ public class MainActivity extends AppCompatActivity
         setTitle(menuItem.getTitle());
         mDrawer.closeDrawers();
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dbManager.close();
+    }
+
 }
 

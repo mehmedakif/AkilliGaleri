@@ -1,9 +1,13 @@
 package com.uear.akilligaleri.ui.gallery;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.ColorDrawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -11,9 +15,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,6 +27,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 
 import com.bumptech.glide.Glide;
+import com.uear.akilligaleri.DBManager;
 import com.uear.akilligaleri.ImgActivity;
 import com.uear.akilligaleri.R;
 import com.uear.akilligaleri.ui.SingleUploadBroadcastReceiver;
@@ -35,31 +42,31 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
+
 public class GalleryFragment extends Fragment implements SingleUploadBroadcastReceiver.Delegate {
 
     private final SingleUploadBroadcastReceiver uploadReceiver =
             new SingleUploadBroadcastReceiver();
-
     private static boolean isGalleryInitalized = false;
-    private static final String[] PERMISSION =
-            {
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.INTERNET
-            };
+    private final File imagesDir = new File(String.valueOf(Environment.
+            getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+    private final File[] files = imagesDir.listFiles();
+    private final List<String> filesList = new ArrayList<>();
+    int ID_COUNTER = 100000;
+
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         GalleryViewModel galleryViewModel = ViewModelProviders.of(this).get(GalleryViewModel.class);
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
         return root;
-
     }
 
     @Override
@@ -70,49 +77,56 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         {
             GridView gridview = Objects.requireNonNull(getView()).findViewById(R.id.galleryGridView);
             final GalleryAdapter galleryAdapter = new GalleryAdapter();
-            final File imagesDir = new File(String.valueOf(Environment.
-                    getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
-            final File[] files = imagesDir.listFiles();
-            final List<String> filesList = new ArrayList<>();
-
             assert files != null;
             for (File file : files)
             {
                 final String path = file.getAbsolutePath();
-
                 if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg"))
                 {
                     filesList.add(path);
                 }
             }
-
-            gridview.setOnItemClickListener((parent, view, position, id) -> {
+            gridview.setOnItemClickListener((parent, view, position, id) ->
+            {
                 //galleryAdapterin dokunulan pozisyonundaki obje sendItem adiyla aliniyor.
                 // Bu obje fotografin yolunu tutuyor.
                 Object sendItem = galleryAdapter.getItem(position);
-
                 // Alinan obje yani fotografin yolu stringe ceviriliyor.
                 String picPath = sendItem.toString();
-
                 // bu yol kullanilarak fotograf bitmap seklinde tutuluyor.
-                //Bitmap picBitmap = BitmapFactory.decodeFile(picPath);
-                uploadImage(picPath);
-            });
+                try {
+//                    if(DBManager.fetchImg(createId(ID_COUNTER,position)).getInt(0)==0)
+//                    {
+                    uploadImage(picPath,Math.toIntExact(galleryAdapter.getItemId(position)));
+                    DBManager.updateImg(createId(ID_COUNTER),1);
+                    Toast toastUploading = Toast.makeText(getActivity(),"UPLOAD EDILIYOR. BEKLEYINIZ...",Toast.LENGTH_LONG);
+                        toastUploading.show();
+//                    }
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+//                Toast toasAlreadyAnalized = Toast.makeText(getActivity(),"ZATEN ANALIZI YAPILDI",Toast.LENGTH_LONG);
+//                toasAlreadyAnalized.show();
 
+            });
             galleryAdapter.setData(filesList);
             gridview.setAdapter(galleryAdapter);
             isGalleryInitalized = true;
         }
+        AsyncTaskRunner runner = new AsyncTaskRunner();
+        runner.execute();
         uploadReceiver.register(Objects.requireNonNull(getActivity()));
     }
 
     @Override
-    public void onPause() {
+    public void onPause()
+    {
         super.onPause();
     }
 
     @Override
-    public void onProgress(int progress) {
+    public void onProgress(int progress)
+    {
 
     }
 
@@ -139,63 +153,91 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         File directory = new File(Environment.getExternalStorageDirectory() + java.io.File.separator + "Pictures/detectedFaces");
         if (!directory.exists()) {
             directory.mkdir();
-            Toast.makeText(getActivity(), "DETECED KLASORU OLUSTURULDU", Toast.LENGTH_SHORT).show();
-        } else
-            Toast.makeText(getActivity(), "KLASOR ZATEN VAR", Toast.LENGTH_SHORT).show();
-
+                    } else
 
         try {
-            JSONObject testV = new JSONObject(new String(serverResponseBody));
+            JSONObject responseObject = new JSONObject(new String(serverResponseBody));
 
-            int objectLength = testV.length();
-            String[] imgArray = new String[objectLength];
-            for(int i = 0; i<objectLength-1 ;i++)
+            String processedImgPath= responseObject.getString("processedImg");
+            //TODO update analisis flag.
+            String processedImgId= responseObject.getString("_id");
+            JSONObject facesObject = responseObject.getJSONObject("faces");
+            int responseLength = facesObject.length();
+            JSONObject[] facesArray = new JSONObject[responseLength];
+            for (int i =0;i<responseLength;i++)
             {
-                String iterator = String.valueOf(i+1);
-                imgArray[i] = testV.getString("face"+iterator);
-                Bitmap bmp = downloadImageFromPath(imgArray[i]);
-                String[] bitmapFaces = new String[objectLength];
-                bitmapFaces[i] = bmp.toString();
-                bitmapToFile(bmp,false);
+                facesArray[i] = facesObject.getJSONObject(String.valueOf(i));
+                DBManager.insertFace(
+                        facesArray[i].getString("_id"),
+                        facesArray[i].getString("X"),
+                        facesArray[i].getString("Y"),
+                        null,
+                        processedImgId
+                );
             }
-            imgArray[objectLength-1]= testV.getString("outputImg");
-            Bitmap bmp = downloadImageFromPath(imgArray[objectLength-1]);
-            bitmapToFile(bmp,true);
+
+            Bitmap shownImgBitmap = fetchImageFromServer(processedImgPath);
+            showImage(shownImgBitmap);
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
+    private void showImage(Bitmap bitmap) {
+        Dialog builder = new Dialog(Objects.requireNonNull(getContext()));
+        builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Objects.requireNonNull(builder.getWindow()).setBackgroundDrawable(
+                new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                //nothing;
+            }
+        });
 
+        ImageView imageView = new ImageView(getContext());
+        imageView.setImageBitmap(bitmap);
+        builder.addContentView(imageView, new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        builder.show();
+    }
     @Override
     public void onCancelled() {
 
     }
+
+    private int createId(int ID_COUNTER) throws NoSuchAlgorithmException
+    {
+        return ID_COUNTER+1;
+    }
+
 /* author AkifAy
 *
 * Uploading image to server.
 * gets path of image as string.
 *
 * */
-    private void uploadImage(String path) {
-
-        String name = "image";
-        try {
+    private boolean uploadImage(String path,int position)
+    {
+        try
+        {
             String uploadId = UUID.randomUUID().toString();
             uploadReceiver.setDelegate(this);
             uploadReceiver.setUploadID(uploadId);
             /*Upload URL is a static variable. May change*/
-            String UPLOAD_URL = "http://81.214.177.75:3000/upload";
+            String UPLOAD_URL = "http://88.235.157.138:3000/upload";
+            String id = String.valueOf(position);
             new MultipartUploadRequest(Objects.requireNonNull(getActivity()), uploadId, UPLOAD_URL)
                     .addFileToUpload(path, "uploadImage") //Adding file
-                    .addParameter("name", name) //Adding text parameter to the request
+                    .addParameter("imgId", id)//Adding text parameter to the request
+                    .addParameter("userId", "45689")//Adding text parameter to the request
                     .setMaxRetries(2)
                     .startUpload();
-
-        } catch (Exception ignored) {
-
         }
-
-
+        catch (Exception ignored)
+        { }
+        return true;
     }
 /* author AkifAy
 *
@@ -204,12 +246,14 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
 * path comes from server as response of upload request
 *
 * */
-    private Bitmap downloadImageFromPath(String path){
+        private Bitmap fetchImageFromServer(String path){
         InputStream in =null;
         Bitmap bmp=null;
         int responseCode = -1;
         try{
-            URL url = new URL("http://81.214.177.75:3000/"+path);
+            Toast toastDownloading = Toast.makeText(getActivity(),"FOTOGRAF INDIRILIYOR...",Toast.LENGTH_LONG);
+            toastDownloading.show();
+            URL url = new URL("http://88.235.157.138:3000/"+path);
             HttpURLConnection con = (HttpURLConnection)url.openConnection();
             con.setDoInput(true);
             con.connect();
@@ -223,7 +267,8 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             }
 
         }
-        catch(Exception ex){
+        catch(Exception ex)
+        {
             Log.e("Exception",ex.toString());
         }
         return bmp;
@@ -242,7 +287,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
 
         try {
             String root = Environment.getExternalStorageDirectory().getAbsolutePath(); // "storage/emulated/0" yolunu getirir.
-            root = root+ "/Pictures/detectedFaces"; // "storage/emulated/0/Pictures" haline getirilir.
+            root = root+ "/Pictures/detectedFaces"; // "storage/emulated/0/Pictures/detectedFaces" haline getirilir.
             Random generator = new Random();
             int n = 10000;
             n = generator.nextInt(n);
@@ -289,18 +334,18 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
 
         @Override
         public int getCount() {
-
             return data.size();
         }
 
         @Override
         public Object getItem(int position) {
+
             return data.get(position);
         }
 
         @Override
         public long getItemId(int position) {
-            return position;
+            return position+ID_COUNTER;
         }
 
         @Override
@@ -311,6 +356,45 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             } else imageview = (ImageView) convertView;
             Glide.with(GalleryFragment.this).load(data.get(position)).centerCrop().into(imageview);
             return imageview;
+        }
+    }
+    @SuppressLint("StaticFieldLeak")
+    class AsyncTaskRunner extends AsyncTask<String, String, String>
+    {
+
+        protected String doInBackground(String... times)
+        {
+            int ID_COUNTER = 1000000;
+            String resp = null;
+            String[] itemsArray = new String[filesList.size()];
+            itemsArray = filesList.toArray(itemsArray);
+            for (int i = 0; i<filesList.size(); i++)
+            {
+                try
+                {
+                    DBManager.insertImg(createId(ID_COUNTER), itemsArray[i], 0, 0);
+                }
+                catch (NoSuchAlgorithmException e)
+                {
+                    e.printStackTrace();
+                }
+                ID_COUNTER = ID_COUNTER + 1;
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result)
+        {
+
+        }
+        @Override
+        protected void onPreExecute()
+        {
+        }
+        @Override
+        protected void onProgressUpdate(String... text)
+        {
         }
     }
 }

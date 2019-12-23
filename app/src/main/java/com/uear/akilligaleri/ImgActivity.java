@@ -12,7 +12,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -50,14 +49,19 @@ public class ImgActivity extends AppCompatActivity {
 
         Bundle extras = getIntent().getExtras();
         assert extras != null;
-        String img = extras.getString("path");
-        Toast bak = Toast.makeText(this,img,Toast.LENGTH_LONG);
-        bak.show();
-
-        Bitmap bitmap = BitmapFactory.decodeFile(img);
+        byte[] byteArray = getIntent().getByteArrayExtra("path");
+        assert byteArray != null;
+        Bitmap bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
         ImageView image = findViewById(R.id.resultImageView);
-
         image.setImageBitmap(bitmap);
+
+
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+
+
 
     }
 }
