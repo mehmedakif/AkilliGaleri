@@ -22,4 +22,10 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="ShowAlertDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">@color/colorCofee</item>
+        <item name="android:background">@color/colorMilk</item>
+        <item name="android:textColorPrimary">@color/drawer_header_background</item>
+    </style>
+
 </resources>

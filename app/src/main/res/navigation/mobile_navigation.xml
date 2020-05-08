@@ -18,10 +18,10 @@
         tools:layout="@layout/fragment_gallery" />
 
     <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.uear.akilligaleri.ui.slideshow.SlideshowFragment"
+        android:id="@+id/nav_people"
+        android:name="com.uear.akilligaleri.ui.people.PeopleFragment"
         android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        tools:layout="@layout/fragment_people" />
 
     <fragment
         android:id="@+id/nav_tools"

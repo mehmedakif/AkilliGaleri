@@ -17,26 +17,7 @@ android:layout_height="match_parent"
             android:id="@+id/flContent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" >
-
-
-<!--            <LinearLayout-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="match_parent"-->
-<!--                android:layout_marginTop="55dp"-->
-<!--                android:orientation="vertical">-->
-
-<!--                &lt;!&ndash; The ActionBar displayed at the top &ndash;&gt;-->
-
-<!--                <include-->
-<!--                    layout="@layout/gallery_layout"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content" />-->
-<!--                &lt;!&ndash; The main content view where fragments are loaded &ndash;&gt;-->
-
-<!--            </LinearLayout> -->
-
-        </FrameLayout>
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <include
             layout="@layout/toolbar"
@@ -58,7 +39,9 @@ android:layout_height="match_parent"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_drawer"
-        app:menu="@menu/main_drawer" />
+        app:menu="@menu/main_drawer" >
+
+    </com.google.android.material.navigation.NavigationView>
 </androidx.drawerlayout.widget.DrawerLayout>
 
 
