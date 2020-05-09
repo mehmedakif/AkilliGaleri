@@ -2,14 +2,13 @@ package com.uear.akilligaleri.ui.home;
 
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,55 +19,62 @@ import com.uear.akilligaleri.R;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PersonPhotos extends AppCompatActivity {
 
-    private static boolean isGalleryInitalized = false;
-    private final File imagesDir = new File(String.valueOf(Environment.
-            getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
-    private final File[] files = imagesDir.listFiles();
-
-
-    final PersonPhotos.GalleryAdapter galleryAdapter = new GalleryAdapter();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person_photos);
-        GridView gridview = findViewById(R.id.personGridView);
+
+
         Bundle extras = getIntent().getExtras();
-        if(extras !=null)
-        {
-            String akif = extras.getString("PersonID");
-            Toast toast = Toast.makeText(this,akif,Toast.LENGTH_LONG);
-            toast.show();
+
+        String requestedPersonClassID = Objects.requireNonNull(extras).getString("PersonID");
+        Log.i("FACEID", Objects.requireNonNull(requestedPersonClassID));
+
+            GridView gridview = findViewById(R.id.personGridView);
+            final GalleryAdapter individualsGalleryAdapter = new GalleryAdapter();
+            List<File> listOfFiles = new ArrayList<>();
+            List<String> listOfPaths = new ArrayList<>();
+
+            Cursor cursor = DBManager.fetchPerson(requestedPersonClassID);
+            cursor.moveToFirst();
+            do {
+                String path = cursor.getString(cursor.getColumnIndex("resimAdres"));
+                File file = new File(path);
+                listOfFiles.add(file);
+            }while(cursor.moveToNext());
+            cursor.close();
+
+
+            for (File file : listOfFiles)
+            {
+                final String path = file.getAbsolutePath();
+                if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg"))
+                {
+                    listOfPaths.add(path);
+                }
+            }
+            individualsGalleryAdapter.setData(listOfPaths);
+            gridview.setAdapter(individualsGalleryAdapter);
+
         }
 
 
-        galleryAdapter.setData(getIndividuals());
-        gridview.setAdapter(galleryAdapter);
-        isGalleryInitalized = true;
+    @Override
+    public void onResume()
+    {
+        super.onResume();
 
     }
-    /*TODO bu fonksiyon kisiyi parametre olarak alacak.*/
-    public List<String> getIndividuals()
-    {
-        List<String> filesList = new ArrayList<>();
-        /*TODO fetchPerson'u dinamik yaparak istenen kisiyi getirtecegiz.*/
-        Cursor cursor = DBManager.fetchPerson("1");
-        cursor.moveToFirst();
-        String path;
-        if(cursor.moveToFirst()){
 
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
-                path = cursor.getString(cursor.getColumnIndex("resimAdres"));
-                filesList.add(path);
-                Toast toast = Toast.makeText(this,path,Toast.LENGTH_LONG);
-                toast.show();
-            }
-            cursor.close();
-        }
-        return filesList;
+    @Override
+    public void onBackPressed() {
+       finish();
     }
 
     final class GalleryAdapter extends BaseAdapter

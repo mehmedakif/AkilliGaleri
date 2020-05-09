@@ -4,12 +4,12 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,8 +20,13 @@ import androidx.lifecycle.ViewModelProviders;
 import com.uear.akilligaleri.DBManager;
 import com.uear.akilligaleri.R;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class HomeFragment extends Fragment implements View.OnClickListener {
     public static boolean isGalleryInitalized = false;
+    private List<Integer> buttonIds = new ArrayList<>();
+    private List<String> classIds = new ArrayList<>();
 
     @SuppressLint("SetTextI18n")
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -33,24 +38,24 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             public void onChanged(@Nullable String s) {
             }
         });
-        Toast toast = Toast.makeText(getActivity(),"HomeFragment",Toast.LENGTH_LONG);
-        toast.show();
-
-
-        //Button button1 = root.findViewById(R.id.button3);
 
         LinearLayout linearLayout = root.findViewById(R.id.linlay);
-        for(int i = 0; i < 5; i++)
+        getNumberOfDistinctFaces();
+
+        for(int i = 0; i < getCount(); i++)
         {
             try
             {
                 Button newButton = new Button(getActivity());
                 newButton.setId(R.id.button+i);
+                buttonIds.add(newButton.getId());
+                Log.i("BUTTON IDS",Integer.toString(newButton.getId()));
                 // Since API Level 17, you can also use View.generateViewId()
                 newButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
                 newButton.setOnClickListener(this);
-                newButton.setText(Integer.toString(i)+" NUMARALI KISI");
+                newButton.setText(i +" NUMARALI KISI");
                 linearLayout.addView(newButton);
+
             }
             catch (Exception e)
             {
@@ -59,66 +64,52 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             }
         }
 
+
+
         return root;
     }
 
-    public int getCount()
+    private void getNumberOfDistinctFaces()
+    {
+        Cursor cursor =DBManager.fetchDistinctFaces();
+        cursor.moveToFirst();
+        try {
+            while (cursor.moveToNext())
+            {
+                classIds.add(cursor.getString(0));
+
+            }
+        } finally
+        {
+            cursor.close();
+        }
+    }
+
+    private int getCount()
     {
         int count=0;
         Cursor cursor = DBManager.fetchCountPerson();
+
         cursor.moveToFirst();
-
-
         if(cursor.moveToFirst()){
 
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 count = cursor.getInt(0);
-                Toast toast = Toast.makeText(getActivity(),count,Toast.LENGTH_LONG);
-                toast.show();
             }
             cursor.close();
         }
-        return count;
+        return count-1;
     }
 
     @Override
     public void onClick(View v)
     {
         Intent i = new Intent(getContext(), PersonPhotos.class);
-        switch (v.getId()) {
+        i.putExtra("PersonID", classIds.get(buttonIds.indexOf(v.getId())));
+        startActivity(i);
 
-            case R.id.button1:
-                i.putExtra("PersonID", "1");
-                startActivity(i);
-                break;
-
-            case R.id.button2:
-                i.putExtra("PersonID", "2");
-                startActivity(i);
-                break;
-            case R.id.button3:
-                i.putExtra("PersonID", "3");
-                startActivity(i);
-                break;
-            case R.id.button4:
-                i.putExtra("PersonID", "4");
-                startActivity(i);
-                break;
-            case R.id.button5:
-                i.putExtra("PersonID", "5");
-                startActivity(i);
-                break;
-            case R.id.button6:
-                i.putExtra("PersonID", "6");
-                startActivity(i);
-                break;
-
-            default:
-                i.putExtra("PersonID", "111000000000000000");
-                startActivity(i);
-                break;
         }
-    }
+
 
 
 }

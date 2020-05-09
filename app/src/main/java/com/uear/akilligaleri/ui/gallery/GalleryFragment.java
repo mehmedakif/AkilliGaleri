@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,12 +47,13 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
     private final File imagesDir = new File(String.valueOf(Environment.
             getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
     private final File[] files = imagesDir.listFiles();
-    private final List<String> filesList = new ArrayList<>();
+    private List<String> filesList = new ArrayList<>();
 
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         GalleryViewModel galleryViewModel = ViewModelProviders.of(this).get(GalleryViewModel.class);
+        isGalleryInitalized = false;
         return inflater.inflate(R.layout.fragment_gallery, container, false);
     }
 
@@ -70,6 +72,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                 if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg"))
                 {
                     filesList.add(path);
+                    Log.i("SQLITE PATH ANA EKRAN",path);
                 }
             }
             //Fotograflara tiklayinca olacaklar.
@@ -81,7 +84,12 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                 // Alinan obje yani fotografin yolu stringe ceviriliyor.
                 String picPath = sendItem.toString();
                 // bu yol kullanilarak fotograf bitmap seklinde tutuluyor.
-                uploadImage(picPath,Math.toIntExact(galleryAdapter.getItemId(position)));
+                Cursor cursorImgId = DBManager.fetchImgIdToUpload(picPath);
+                cursorImgId.moveToFirst();
+                int imgID = cursorImgId.getInt(0);
+                //uploadImage(picPath,Math.toIntExact(galleryAdapter.getItemId(position)));
+                uploadImage(picPath,imgID);
+                cursorImgId.close();
             });
 
             //Fotograflara uzun tiklayinca olacaklar.
@@ -271,7 +279,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
         @Override
         public long getItemId(int position) {
             int ID_COUNTER = 10000;
-            return position+ ID_COUNTER;
+            return position+ID_COUNTER;
         }
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
@@ -290,7 +298,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
     //1-Tum resimler veri tabanina kayit ediliyor.
         protected String doInBackground(String... times)
         {
-            int ID_COUNTER = 100001;
+            int ID_COUNTER = 10000;
             String resp = null;
             String[] itemsArray = new String[filesList.size()];
             itemsArray = filesList.toArray(itemsArray);
@@ -301,7 +309,7 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             }
             return null;
         }
-//AsyncTask tamamlandiktan sonra calisacak.
+        //AsyncTask tamamlandiktan sonra calisacak.
         @Override
         protected void onPostExecute(String result)
         {

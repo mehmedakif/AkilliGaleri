@@ -22,13 +22,12 @@ public class DBManager {
         context = c;
     }
 
-    DBManager open() throws SQLException
+    void open() throws SQLException
     {
         dbHelper = new DatabaseHelper(context);
         database = dbHelper.getWritableDatabase();
         Log.i("DB","DATABASE ACILDI");
         dbHelper.onCreate(database);
-        return this;
     }
 
     void close()
@@ -64,7 +63,7 @@ public class DBManager {
 
     public static Cursor fetchPerson(String alinacak_kisi)
     {
-        return database.rawQuery("SELECT resimAdres FROM " + RESIMLER_TABLOSU + " WHERE resimID = (SELECT resimID FROM     yuzlerTablosu WHERE yuzID = " + alinacak_kisi + ");",null);
+        return database.rawQuery("SELECT resimAdres FROM " + RESIMLER_TABLOSU + " WHERE resimID IN (SELECT DISTINCT resimID FROM yuzlerTablosu WHERE yuzSahibi = " + alinacak_kisi + ");",null);
     }
 
     //Analiz edilmemis tum fotograflarin resimAdreslerini(path) getirir.
@@ -73,6 +72,14 @@ public class DBManager {
         return database.rawQuery("SELECT resimAdres FROM " + RESIMLER_TABLOSU + " WHERE analiz = 0 ",null);
     }
 
+    public static Cursor fetchImgIdToUpload(String picPath)
+    {
+        return database.rawQuery("SELECT resimID FROM " + RESIMLER_TABLOSU + " WHERE resimAdres = '" + picPath +"';",null);
+    }
+    public static Cursor fetchDistinctFaces()
+    {
+        return database.rawQuery("SELECT DISTINCT yuzSahibi FROM " + YUZLER_TABLOSU + ";",null);
+    }
     //Analize gonderilen fotografin processed alani guncellenir.
     @SuppressLint("Recycle")
     public static void updateProccesStatus(String path) {
@@ -98,14 +105,12 @@ public class DBManager {
         int i = database.update(RESIMLER_TABLOSU, contentValues, " resimID = " + imgId, null);
     }
 
-
     public int updateFace(long _id, String name, String desc)
     {
         ContentValues contentValues = new ContentValues();
         contentValues.put(DatabaseHelper.PATH, name);
         contentValues.put(DatabaseHelper.FACECOUNT, desc);
-        int i = database.update(RESIMLER_TABLOSU, contentValues, DatabaseHelper.IMGID + " = " + _id, null);
-        return i;
+        return database.update(RESIMLER_TABLOSU, contentValues, DatabaseHelper.IMGID + " = " + _id, null);
     }
 
     public void deleteImg(long _id)
