@@ -205,11 +205,22 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
             for (int i =0;i<responseLength;i++)
             {
                 facesArray[i] = facesObject.getJSONObject(String.valueOf(i));
+                /*
+                * JSON icerisinden dogruluk ve tahmin sonucu alinir.
+                * Eger dogruluk orani 0.6'dan kucuk ise etiket -1 yani esigin altinda kalmis,
+                * tanimlanamamis kisi olarkak etiketlernir.
+                */
+                double accu = facesArray[i].getDouble("csIdPer");
+                String person = facesArray[i].getString("classId");
+                if( Math.abs(1.0-accu) <= 0.40) {
+                    person = "-1";
+                }
+
                 DBManager.insertFace(
                         facesArray[i].getString("_id"),
                         facesArray[i].getString("X"),
                         facesArray[i].getString("Y"),
-                        facesArray[i].getString("classId"),
+                        person,
                         facesArray[i].getDouble("csIdPer"),
                         processedImgId
                 );
