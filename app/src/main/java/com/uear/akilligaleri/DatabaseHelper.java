@@ -20,6 +20,7 @@ public class DatabaseHelper extends SQLiteOpenHelper
     static final String POSITIONX = "x";
     static final String POSITIONY = "y";
     static final String OWNER = "yuzSahibi";
+    static final String ACC = "acc";
     private static String KISIID ;
 
     // Database Information
@@ -27,13 +28,14 @@ public class DatabaseHelper extends SQLiteOpenHelper
     // database version
     private static final int DB_VERSION = 1;
     // Resimler tablosunu olusturacak sorgu.
+
     private static final String CREATE_TABLE_IMG = "CREATE TABLE IF NOT EXISTS " + RESIMLER_TABLOSU + "(" + IMGID
             + " INTEGER PRIMARY KEY UNIQUE , " + PATH + " TEXT NOT NULL, " + FACECOUNT + " INTEGER,"+ PROCESSED +" INTEGER);";
+
     // Yuzler tablosunu olusturacak sorgu.
     private static final String CREATE_TABLE_FACE = "CREATE TABLE IF NOT EXISTS " + YUZLER_TABLOSU + "(" + FACEID
-            + " INTEGER PRIMARY KEY AUTOINCREMENT, " + IMGID + " INTEGER NOT NULL, " + POSITIONX + " TEXT,"+ POSITIONY + " TEXT," +       OWNER + " TEXT, FOREIGN KEY ("+IMGID+") REFERENCES " +RESIMLER_TABLOSU+"("+IMGID+"));";
+            + " INTEGER PRIMARY KEY AUTOINCREMENT, " + IMGID + " INTEGER NOT NULL, " + POSITIONX + " TEXT,"+ POSITIONY + " TEXT," + OWNER + " TEXT," + ACC + " REAL, FOREIGN KEY ("+IMGID+") REFERENCES " +RESIMLER_TABLOSU+"("+IMGID+"));";
 
-    final String GET_PATHS = "SELECT imgID FROM " + RESIMLER_TABLOSU + "WHERE resimID = (SELECT resimID FROM     yuzlerTablosu WHERE yuzID = " + KISIID + ");";
 
     public void onCreate(SQLiteDatabase db)
     {

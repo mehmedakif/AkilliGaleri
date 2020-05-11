@@ -45,7 +45,7 @@ public class DBManager {
         database.insertWithOnConflict(RESIMLER_TABLOSU, null, contentValue,SQLiteDatabase.CONFLICT_REPLACE);
     }
 
-    public static void insertFace(String faceId, String X, String Y, String faceOwner, String imgId)
+    public static void insertFace(String faceId, String X, String Y, String faceOwner, double classAccur, String imgId)
     {
         ContentValues contentValue = new ContentValues();
         contentValue.put(DatabaseHelper.FACEID, faceId);
@@ -53,6 +53,7 @@ public class DBManager {
         contentValue.put(DatabaseHelper.POSITIONY, Y);
         contentValue.put(DatabaseHelper.OWNER, faceOwner);
         contentValue.put(DatabaseHelper.IMGID, imgId);
+        contentValue.put(DatabaseHelper.ACC, classAccur);
         database.insertWithOnConflict(DatabaseHelper.YUZLER_TABLOSU, null, contentValue,SQLiteDatabase.CONFLICT_IGNORE);
     }
 
@@ -63,7 +64,7 @@ public class DBManager {
 
     public static Cursor fetchPerson(String alinacak_kisi)
     {
-        return database.rawQuery("SELECT resimAdres FROM " + RESIMLER_TABLOSU + " WHERE resimID IN (SELECT DISTINCT resimID FROM yuzlerTablosu WHERE yuzSahibi = " + alinacak_kisi + ");",null);
+        return database.rawQuery("SELECT resimAdres FROM " + RESIMLER_TABLOSU + " WHERE resimID = (SELECT DISTINCT resimID FROM yuzlerTablosu WHERE yuzSahibi = " + alinacak_kisi + ");",null);
     }
 
     //Analiz edilmemis tum fotograflarin resimAdreslerini(path) getirir.
@@ -112,10 +113,14 @@ public class DBManager {
         contentValues.put(DatabaseHelper.FACECOUNT, desc);
         return database.update(RESIMLER_TABLOSU, contentValues, DatabaseHelper.IMGID + " = " + _id, null);
     }
-
-    public void deleteImg(long _id)
+    public static void updateClass(String owner, String path)
     {
-        database.delete(RESIMLER_TABLOSU, DatabaseHelper.IMGID + "=" + _id, null);
+        database.rawQuery("UPDATE " + YUZLER_TABLOSU + " SET yuzSahibi = '" + owner + "' WHERE resimID = (SELECT resimID FROM resimlerTablosu WHERE resimAdres = '" + path + "');",null);
+    }
+
+    public static void deleteImg(String path)
+    {
+        database.delete(RESIMLER_TABLOSU, DatabaseHelper.PATH + "=" + "'"+path+"'", null);
     }
     public void deleteFace(long _id)
     {

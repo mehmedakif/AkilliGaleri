@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -87,9 +89,14 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                 Cursor cursorImgId = DBManager.fetchImgIdToUpload(picPath);
                 cursorImgId.moveToFirst();
                 int imgID = cursorImgId.getInt(0);
-                //uploadImage(picPath,Math.toIntExact(galleryAdapter.getItemId(position)));
                 uploadImage(picPath,imgID);
                 cursorImgId.close();
+                Bitmap myBitmap = BitmapFactory.decodeFile(picPath);
+                ImageView fullImageView = new ImageView(getContext());
+                fullImageView.setImageBitmap(myBitmap);
+                
+
+
             });
 
             //Fotograflara uzun tiklayinca olacaklar.
@@ -108,10 +115,12 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 File file = new File(picPath);
+                                DBManager.deleteImg(picPath);
                                 boolean deleted = file.delete();
                                 if(deleted){
                                     Toast toastIptal = Toast.makeText(getActivity(), "Fotograf başarıyla silindi.", Toast.LENGTH_LONG);
                                     toastIptal.show();
+
                                 }
                                 dialog.dismiss();
                             }
@@ -201,9 +210,9 @@ public class GalleryFragment extends Fragment implements SingleUploadBroadcastRe
                         facesArray[i].getString("X"),
                         facesArray[i].getString("Y"),
                         facesArray[i].getString("classId"),
+                        facesArray[i].getDouble("csIdPer"),
                         processedImgId
                 );
-
 
             }
 

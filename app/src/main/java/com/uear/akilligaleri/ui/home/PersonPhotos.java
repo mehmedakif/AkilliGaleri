@@ -1,19 +1,27 @@
 package com.uear.akilligaleri.ui.home;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.uear.akilligaleri.DBManager;
+import com.uear.akilligaleri.DialogHelper;
 import com.uear.akilligaleri.R;
 
 import java.io.File;
@@ -29,11 +37,11 @@ public class PersonPhotos extends AppCompatActivity {
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person_photos);
-
-
         Bundle extras = getIntent().getExtras();
-
-        String requestedPersonClassID = Objects.requireNonNull(extras).getString("PersonID");
+        String requestedPersonClassID = null;
+        if (extras != null) {
+            requestedPersonClassID = extras.getString("PersonID");
+        }
         Log.i("FACEID", Objects.requireNonNull(requestedPersonClassID));
 
             GridView gridview = findViewById(R.id.personGridView);
@@ -50,7 +58,6 @@ public class PersonPhotos extends AppCompatActivity {
             }while(cursor.moveToNext());
             cursor.close();
 
-
             for (File file : listOfFiles)
             {
                 final String path = file.getAbsolutePath();
@@ -62,7 +69,84 @@ public class PersonPhotos extends AppCompatActivity {
             individualsGalleryAdapter.setData(listOfPaths);
             gridview.setAdapter(individualsGalleryAdapter);
 
+        gridview.setOnItemClickListener((parent, view, position, id) ->
+        {
+            Object sendItem = individualsGalleryAdapter.getItem(position);
+            String picPath = sendItem.toString();
+            createAlert(picPath);
+
+        });
+
         }
+
+    public void createAlert(String picPath){
+        AlertDialog.Builder builder = DialogHelper.alertBuilder(PersonPhotos.this);
+
+        final EditText input = new EditText(PersonPhotos.this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT);
+        input.setLayoutParams(lp);
+
+
+        ArrayList<String> spinnerArray = new ArrayList<String>();
+
+        Cursor countCursor = DBManager.fetchDistinctFaces();
+        countCursor.moveToFirst();
+        do {
+            spinnerArray.add(countCursor.getString(0));
+        }while (countCursor.moveToNext());
+
+
+
+        Spinner classSpinner = new Spinner(PersonPhotos.this);
+        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(PersonPhotos.this, android.R.layout.simple_spinner_dropdown_item, spinnerArray);
+        classSpinner.setAdapter(spinnerArrayAdapter);
+        classSpinner.setPadding(55,0,55,0);
+        builder.setView(classSpinner);
+
+
+
+        builder.setTitle("Akıllı Galeri");
+        builder.setMessage("Yanlış etiketleme olduğunu mu düşünüyorsunuz? Öyle ise bu kişiyi yeniden tanımlayın :");
+
+        builder.setNeutralButton(
+                "Iptal",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                }
+        );
+        builder.setPositiveButton(
+                "Değiştir",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        DBManager.updateClass(classSpinner.getItemAtPosition(classSpinner.getSelectedItemPosition()).toString(),picPath);
+                        Toast toastPaylas = Toast.makeText(PersonPhotos.this, "Değiştirme işlemi yapıldı.", Toast.LENGTH_LONG);
+                        toastPaylas.show();
+                        dialog.dismiss();
+                    }
+                }
+        );
+        builder.setNegativeButton(
+                "Etiketi Kaldır",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        Toast toastPaylas = Toast.makeText(PersonPhotos.this, "Etiket kaldırıldı", Toast.LENGTH_LONG);
+                        toastPaylas.show();
+                        dialog.dismiss();
+                    }
+                }
+        );
+
+        builder.show();
+    }
 
 
     @Override
@@ -72,10 +156,6 @@ public class PersonPhotos extends AppCompatActivity {
 
     }
 
-    @Override
-    public void onBackPressed() {
-       finish();
-    }
 
     final class GalleryAdapter extends BaseAdapter
     {

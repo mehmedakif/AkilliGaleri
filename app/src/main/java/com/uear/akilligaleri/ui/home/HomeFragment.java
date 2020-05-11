@@ -23,6 +23,8 @@ import com.uear.akilligaleri.R;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.uear.akilligaleri.R.drawable.person_button_style;
+
 public class HomeFragment extends Fragment implements View.OnClickListener {
     public static boolean isGalleryInitalized = false;
     private List<Integer> buttonIds = new ArrayList<>();
@@ -40,7 +42,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         });
 
         LinearLayout linearLayout = root.findViewById(R.id.linlay);
-        getNumberOfDistinctFaces();
+
 
         for(int i = 0; i < getCount(); i++)
         {
@@ -48,10 +50,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             {
                 Button newButton = new Button(getActivity());
                 newButton.setId(R.id.button+i);
+                newButton.setBackgroundResource(person_button_style);
                 buttonIds.add(newButton.getId());
-                Log.i("BUTTON IDS",Integer.toString(newButton.getId()));
-                // Since API Level 17, you can also use View.generateViewId()
-                newButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+                newButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT,50));
                 newButton.setOnClickListener(this);
                 newButton.setText(i +" NUMARALI KISI");
                 linearLayout.addView(newButton);
@@ -64,6 +65,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             }
         }
 
+        getNumberOfDistinctFaces();
+        Log.i("FACE COUNT", String.valueOf(getCount()));
 
 
         return root;
@@ -77,7 +80,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             while (cursor.moveToNext())
             {
                 classIds.add(cursor.getString(0));
-
+                String msg = cursor.getString(0);
+                //Log.i("FACE_DISTINCT",msg);
             }
         } finally
         {
@@ -98,7 +102,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             }
             cursor.close();
         }
-        return count-1;
+        return count;
     }
 
     @Override
@@ -108,8 +112,5 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         i.putExtra("PersonID", classIds.get(buttonIds.indexOf(v.getId())));
         startActivity(i);
 
-        }
-
-
-
+    }
 }
